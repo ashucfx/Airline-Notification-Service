@@ -13,7 +13,6 @@ async function sendEmail(mailFrom,mailTo,subject,text){
       });
       return response;
     } catch (error) {
-        console.log(error);
         throw error;
         
     }
@@ -26,7 +25,6 @@ async function createTicket(data){
         return response;
         
     } catch (error) {
-        console.log(error);
         throw error;
         
     }
@@ -39,7 +37,6 @@ async function getPendingEmails(){
         return response;
         
     } catch (error) {
-        console.log(error);
         throw error;
         
     }

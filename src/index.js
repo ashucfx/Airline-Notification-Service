@@ -13,10 +13,15 @@ async function connectQueue() {
         const channel = await connection.createChannel();
         await channel.assertQueue(serverConfig.RABBITMQ_QUEUE);
         channel.consume(serverConfig.RABBITMQ_QUEUE, async (data) => {
-            console.log(`${Buffer.from(data.content)}`);
-            const object = JSON.parse(`${Buffer.from(data.content)}`);
-            await EmailService.sendEmail(serverConfig.SENDER_EMAIL, object.recepientEmail, object.subject, object.text);
-            channel.ack(data);
+            try {
+                console.log(`${Buffer.from(data.content)}`);
+                const object = JSON.parse(`${Buffer.from(data.content)}`);
+                await EmailService.sendEmail(serverConfig.SENDER_EMAIL, object.recepientEmail, object.subject, object.text);
+                channel.ack(data);
+            } catch(err) {
+                console.error('Error processing message in consumer:', err);
+                channel.nack(data, false, false); // discard bad messages to prevent poison queue
+            }
         })
     } catch(error) {
         console.log(error);
@@ -27,10 +32,16 @@ async function connectQueue() {
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - only allow specified origins
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:3000', 'http://localhost:3002', 'http://frontend:3000'];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
